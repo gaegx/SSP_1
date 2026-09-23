@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Крестики-нолики · Lab 4</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div>
+          <p class="eyebrow">Lab 4 · WebSocket</p>
+          <h1>Крестики-нолики</h1>
+        </div>
+        <div id="conn" class="pill offline">офлайн</div>
+      </header>
+
+      <section id="lobby" class="panel">
+        <h2>Комната</h2>
+        <p class="lead">Создайте игру или войдите по коду. Состояние сохраняется на сервере.</p>
+        <div class="row">
+          <button id="btn-create" class="btn primary" type="button">Создать комнату</button>
+        </div>
+        <div class="row join">
+          <input id="code-input" maxlength="6" placeholder="Код комнаты" autocomplete="off" />
+          <button id="btn-join" class="btn" type="button">Войти</button>
+        </div>
+        <button id="btn-resync" class="btn ghost" type="button" hidden>Восстановить прошлую игру</button>
+      </section>
+
+      <section id="game" class="panel" hidden>
+        <div class="meta">
+          <div>
+            <span class="label">Комната</span>
+            <strong id="room-code">—</strong>
+            <button id="btn-copy" class="link" type="button">копировать</button>
+          </div>
+          <div>
+            <span class="label">Вы</span>
+            <strong id="you-mark">—</strong>
+          </div>
+          <div>
+            <span class="label">Ход</span>
+            <strong id="turn-mark">—</strong>
+          </div>
+        </div>
+        <p id="status-text" class="status">Ожидание…</p>
+        <div id="board" class="board" aria-label="Игровое поле"></div>
+        <div class="row">
+          <button id="btn-restart" class="btn" type="button">Ещё раз</button>
+          <button id="btn-leave" class="btn ghost" type="button">Выйти в лобби</button>
+        </div>
+      </section>
+
+      <p id="toast" class="toast" hidden></p>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>

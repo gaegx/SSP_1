@@ -1,0 +1,4 @@
+.idea/
+.agentbridge/
+**/.env
+**/node_modules/

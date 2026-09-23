@@ -271,6 +271,24 @@ router.post(
         message: 'Если аккаунт существует, письмо отправлено',
       });
     } catch (err) {
+      if (err.code === 'EAUTH' || err.responseCode === 535) {
+        return next(
+          new HttpError(
+            502,
+            'Gmail отклонил SMTP-логин. Проверьте App Password в .env (2FA + пароль приложения).',
+            'SMTP_AUTH_FAILED',
+          ),
+        );
+      }
+      if (err.code === 'ESOCKET' || err.code === 'ECONNECTION' || err.code === 'ETIMEDOUT') {
+        return next(
+          new HttpError(
+            502,
+            'Не удалось подключиться к SMTP (порт 587). Проверьте сеть/VPN/firewall Docker.',
+            'SMTP_CONNECTION_FAILED',
+          ),
+        );
+      }
       next(err);
     }
   },
