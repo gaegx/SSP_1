@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: freelance
+      POSTGRES_PASSWORD: freelance
+      POSTGRES_DB: freelance
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U freelance -d freelance']
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql://freelance:freelance@db:5432/freelance
+      PORT: 4000
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - '4000:4000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    build: ./client
+    ports:
+      - '3000:80'
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  uploads:
