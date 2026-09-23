@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= title %> — Jira Lab</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <nav class="topbar">
+      <a class="logo" href="/">
+        <svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true">
+          <path fill="#fff" d="M30.9 15.3 17.4 1.8 16 .5 5.8 10.7.6 15.3a1.3 1.3 0 0 0 0 1.9l9.4 9.3L16 32.5l10.2-10.2.1-.1 4.6-4.6a1.3 1.3 0 0 0 0-2.3ZM16 20.8 11.3 16 16 11.3 20.7 16 16 20.8Z"/>
+        </svg>
+        <span>Jira Lab</span>
+      </a>
+      <ul class="topnav">
+        <li><a href="/">Ваша работа</a></li>
+        <li class="active"><a href="/">Проекты</a></li>
+        <li><a href="/">Фильтры</a></li>
+        <li><a href="/">Дашборды</a></li>
+      </ul>
+      <a class="btn btn-create" href="/#create">Создать</a>
+      <div class="topbar-right">
+        <label class="search" aria-label="Поиск">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M16.4 15 21 19.6 19.6 21 15 16.4A7 7 0 1 1 16.4 15Zm-6.4 0a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/></svg>
+          <span>Поиск</span>
+        </label>
+        <span class="avatar" title="Данил">Д</span>
+      </div>
+    </nav>
+
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="project">
+          <span class="project-avatar">ЛР</span>
+          <div>
+            <strong>Лабораторная №1</strong>
+            <span>Программный проект</span>
+          </div>
+        </div>
+        <% const currentFilter = filterStatus; %>
+        <nav class="sidenav">
+          <p class="sidenav-title">Планирование</p>
+          <a class="<%= currentFilter === 'all' ? 'active' : '' %>" href="/">
+            <span class="ico ico-board"></span>Доска
+          </a>
+          <a class="<%= currentFilter === 'open' ? 'active' : '' %>" href="/?status=open">
+            <span class="ico ico-backlog"></span>Бэклог
+          </a>
+          <a class="<%= currentFilter === 'in_progress' ? 'active' : '' %>" href="/?status=in_progress">
+            <span class="ico ico-progress"></span>В работе
+          </a>
+          <a class="<%= currentFilter === 'done' ? 'active' : '' %>" href="/?status=done">
+            <span class="ico ico-done"></span>Выполнено
+          </a>
+          <p class="sidenav-title">Разработка</p>
+          <a href="/#create"><span class="ico ico-plus"></span>Создать задачу</a>
+        </nav>
+        <p class="sidenav-foot">Вы находитесь в проекте на основе команды</p>
+      </aside>
+
+      <main class="content">

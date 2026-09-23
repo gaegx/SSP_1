@@ -1,0 +1,16 @@
+<%- include('partials/header') %>
+
+<nav class="breadcrumbs">
+  <a href="/">Проекты</a>
+  <span>/</span>
+  <a href="/">Лабораторная №1</a>
+</nav>
+
+<section class="empty-state">
+  <div class="empty-art">🔍</div>
+  <h1><%= title %></h1>
+  <p class="muted"><%= typeof message !== 'undefined' ? message : 'Страница не найдена.' %></p>
+  <a class="btn btn-primary" href="/">Вернуться на доску</a>
+</section>
+
+<%- include('partials/footer') %>

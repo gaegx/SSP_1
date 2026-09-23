@@ -1,0 +1,91 @@
+<%- include('partials/header') %>
+
+<nav class="breadcrumbs">
+  <a href="/">Проекты</a>
+  <span>/</span>
+  <a href="/">Лабораторная №1</a>
+  <span>/</span>
+  <span class="crumb-key"><span class="type-icon"></span><%= issueKey(task) %></span>
+</nav>
+
+<% if (error) { %>
+  <p class="flag flag-error" role="alert"><%= error %></p>
+<% } %>
+
+<div class="issue">
+  <section class="issue-main">
+    <form id="edit-form" class="issue-summary" method="post" action="/tasks/<%= task.id %>">
+      <label class="sr-only" for="issue-title">Название</label>
+      <input id="issue-title" class="summary-input" type="text" name="title" required value="<%= task.title %>" />
+    </form>
+
+    <div class="issue-toolbar">
+      <label class="btn btn-subtle attach-btn" for="attachment-input">📎 Прикрепить</label>
+      <form class="inline" method="post" action="/tasks/<%= task.id %>/delete">
+        <button class="btn btn-subtle btn-danger" type="submit">Удалить задачу</button>
+      </form>
+    </div>
+
+    <h2 class="section-title">Вложения <span class="count">(<%= task.files.length %>)</span></h2>
+    <% if (task.files.length === 0) { %>
+      <p class="muted">Файлы ещё не прикреплены.</p>
+    <% } else { %>
+      <ul class="attachments">
+        <% task.files.forEach((file) => { %>
+          <li class="attachment">
+            <span class="file-icon"></span>
+            <div class="attachment-body">
+              <a href="/tasks/<%= task.id %>/files/<%= file.id %>"><%= file.originalName %></a>
+              <span class="muted"><%= file.mimeType %> · <%= file.size %> байт</span>
+            </div>
+            <form method="post" action="/tasks/<%= task.id %>/files/<%= file.id %>/delete">
+              <button class="btn btn-subtle btn-icon" type="submit" title="Удалить файл">✕</button>
+            </form>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <form class="upload" method="post" action="/tasks/<%= task.id %>/files" enctype="multipart/form-data">
+      <label>
+        <span class="muted">Перетащите файл или выберите его</span>
+        <input id="attachment-input" type="file" name="attachment" required />
+      </label>
+      <button class="btn btn-primary" type="submit">Загрузить</button>
+    </form>
+  </section>
+
+  <aside class="issue-side">
+    <div class="status-row">
+      <select class="status-select status-<%= task.status %>" name="status" form="edit-form" aria-label="Статус">
+        <% statuses.forEach((status) => { %>
+          <option value="<%= status %>" <%= task.status === status ? 'selected' : '' %>>
+            <%= statusLabels[status] %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+
+    <details class="details-panel" open>
+      <summary>Детали</summary>
+      <dl class="fields">
+        <dt>Исполнитель</dt>
+        <dd><span class="avatar avatar-sm">Д</span> Данил</dd>
+        <dt>Тип</dt>
+        <dd><span class="type-icon"></span> Задача</dd>
+        <dt>Приоритет</dt>
+        <dd><span class="priority"></span> Средний</dd>
+        <dt><label for="dueDate">Ожидаемая дата</label></dt>
+        <dd><input id="dueDate" type="date" name="dueDate" form="edit-form" required value="<%= task.dueDate %>" /></dd>
+        <dt>Ключ</dt>
+        <dd><%= issueKey(task) %></dd>
+      </dl>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit" form="edit-form">Сохранить</button>
+        <a class="btn btn-link" href="/">Отмена</a>
+      </div>
+    </details>
+  </aside>
+</div>
+
+<%- include('partials/footer') %>

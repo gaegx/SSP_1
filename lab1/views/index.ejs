@@ -1,0 +1,96 @@
+<%- include('partials/header') %>
+
+<nav class="breadcrumbs">
+  <a href="/">Проекты</a>
+  <span>/</span>
+  <a href="/">Лабораторная №1</a>
+</nav>
+
+<header class="page-head">
+  <h1>Доска LAB</h1>
+  <form id="filter-form" class="filter-bar" method="get" action="/">
+    <label class="filter-search">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M16.4 15 21 19.6 19.6 21 15 16.4A7 7 0 1 1 16.4 15Zm-6.4 0a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/></svg>
+      <select name="status" aria-label="Фильтр по статусу">
+        <option value="all" <%= filterStatus === 'all' ? 'selected' : '' %>>Все задачи</option>
+        <% statuses.forEach((status) => { %>
+          <option value="<%= status %>" <%= filterStatus === status ? 'selected' : '' %>>
+            <%= statusLabels[status] %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
+    <button class="btn btn-subtle" type="submit">Показать</button>
+    <% if (filterStatus !== 'all') { %>
+      <a class="btn btn-link" href="/">Сбросить</a>
+    <% } %>
+  </form>
+</header>
+
+<% if (error) { %>
+  <p class="flag flag-error" role="alert"><%= error %></p>
+<% } %>
+
+<details id="create" class="create-panel" <%= error ? 'open' : '' %>>
+  <summary>
+    <span class="btn btn-primary">+ Создать задачу</span>
+  </summary>
+  <form class="create-form" method="post" action="/tasks">
+    <h2>Создание задачи</h2>
+    <label>
+      Название <em>*</em>
+      <input type="text" name="title" required value="<%= form.title %>" placeholder="Что нужно сделать?" />
+    </label>
+    <div class="row">
+      <label>
+        Статус
+        <select name="status">
+          <% statuses.forEach((status) => { %>
+            <option value="<%= status %>" <%= form.status === status ? 'selected' : '' %>>
+              <%= statusLabels[status] %>
+            </option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Ожидаемая дата завершения <em>*</em>
+        <input type="date" name="dueDate" required value="<%= form.dueDate %>" />
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Создать</button>
+    </div>
+  </form>
+</details>
+
+<% const columns = filterStatus === 'all' ? statuses : [filterStatus]; %>
+<section class="board columns-<%= columns.length %>">
+  <% columns.forEach((status) => { %>
+    <% const items = tasks.filter((task) => task.status === status); %>
+    <div class="column status-<%= status %>">
+      <header class="column-head">
+        <span class="column-title"><%= statusLabels[status] %></span>
+        <span class="column-count"><%= items.length %></span>
+      </header>
+      <% if (items.length === 0) { %>
+        <p class="column-empty">Нет задач</p>
+      <% } %>
+      <% items.forEach((task) => { %>
+        <a class="card" href="/tasks/<%= task.id %>">
+          <span class="card-title"><%= task.title %></span>
+          <span class="card-meta">
+            <span class="type-icon" title="Задача"></span>
+            <span class="key"><%= issueKey(task) %></span>
+            <span class="lozenge lozenge-<%= task.status %>"><%= statusLabels[task.status] %></span>
+            <span class="due">до <%= formatDate(task.dueDate) %></span>
+            <% if (task.files.length > 0) { %>
+              <span class="clip" title="Вложения">📎 <%= task.files.length %></span>
+            <% } %>
+          </span>
+        </a>
+      <% }) %>
+    </div>
+  <% }) %>
+</section>
+
+<%- include('partials/footer') %>
