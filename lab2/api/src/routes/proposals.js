@@ -3,6 +3,8 @@ import { body, param } from 'express-validator';
 import { query } from '../db.js';
 import { upload } from '../middleware/upload.js';
 import { handleValidation, mapProposal } from '../middleware/validate.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { HttpError } from '../errors.js';
 
 const router = Router({ mergeParams: true });
 
@@ -19,10 +21,16 @@ const proposalValidators = [
     .withMessage('Срок: от 1 до 365 дней'),
 ];
 
-async function jobExists(jobId) {
-  const result = await query('SELECT id FROM jobs WHERE id = $1', [jobId]);
-  return result.rowCount > 0;
+async function getJob(jobId) {
+  const result = await query('SELECT * FROM jobs WHERE id = $1', [jobId]);
+  return result.rows[0] || null;
 }
+
+function canManageProposal(user, proposal) {
+  return user.role === 'admin' || proposal.author_id === user.id;
+}
+
+router.use(requireAuth);
 
 router.get(
   '/jobs/:jobId/proposals',
@@ -30,8 +38,14 @@ router.get(
   handleValidation,
   async (req, res, next) => {
     try {
-      if (!(await jobExists(req.params.jobId))) {
-        return res.status(404).json({ error: 'Заказ не найден' });
+      const job = await getJob(req.params.jobId);
+      if (!job) throw new HttpError(404, 'Заказ не найден', 'JOB_NOT_FOUND');
+      if (
+        req.user.role === 'customer' &&
+        job.owner_id !== req.user.id &&
+        req.user.role !== 'admin'
+      ) {
+        throw new HttpError(403, 'Недостаточно прав', 'FORBIDDEN');
       }
       const result = await query(
         'SELECT * FROM proposals WHERE job_id = $1 ORDER BY created_at DESC',
@@ -46,22 +60,22 @@ router.get(
 
 router.post(
   '/jobs/:jobId/proposals',
+  requireRole('freelancer', 'admin'),
   upload.single('portfolio'),
   param('jobId').isInt({ min: 1 }).withMessage('Некорректный jobId'),
   proposalValidators,
   handleValidation,
   async (req, res, next) => {
     try {
-      if (!(await jobExists(req.params.jobId))) {
-        return res.status(404).json({ error: 'Заказ не найден' });
-      }
+      const job = await getJob(req.params.jobId);
+      if (!job) throw new HttpError(404, 'Заказ не найден', 'JOB_NOT_FOUND');
 
       const { coverLetter, bidAmount, estimatedDays } = req.body;
       const portfolioPath = req.file ? `/uploads/${req.file.filename}` : null;
 
       const result = await query(
-        `INSERT INTO proposals (job_id, cover_letter, bid_amount, estimated_days, portfolio_path)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO proposals (job_id, cover_letter, bid_amount, estimated_days, portfolio_path, author_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
         [
           req.params.jobId,
@@ -69,6 +83,7 @@ router.post(
           bidAmount,
           estimatedDays,
           portfolioPath,
+          req.user.id,
         ],
       );
       res.status(201).json(mapProposal(result.rows[0]));
@@ -88,7 +103,7 @@ router.get(
         req.params.id,
       ]);
       if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Отклик не найден' });
+        throw new HttpError(404, 'Отклик не найден', 'PROPOSAL_NOT_FOUND');
       }
       res.status(200).json(mapProposal(result.rows[0]));
     } catch (err) {
@@ -99,6 +114,7 @@ router.get(
 
 router.put(
   '/proposals/:id',
+  requireRole('freelancer', 'admin'),
   upload.single('portfolio'),
   param('id').isInt({ min: 1 }).withMessage('Некорректный id'),
   proposalValidators,
@@ -109,7 +125,10 @@ router.put(
         req.params.id,
       ]);
       if (existing.rowCount === 0) {
-        return res.status(404).json({ error: 'Отклик не найден' });
+        throw new HttpError(404, 'Отклик не найден', 'PROPOSAL_NOT_FOUND');
+      }
+      if (!canManageProposal(req.user, existing.rows[0])) {
+        throw new HttpError(403, 'Недостаточно прав', 'FORBIDDEN');
       }
 
       const { coverLetter, bidAmount, estimatedDays } = req.body;
@@ -140,17 +159,21 @@ router.put(
 
 router.delete(
   '/proposals/:id',
+  requireRole('freelancer', 'admin'),
   param('id').isInt({ min: 1 }).withMessage('Некорректный id'),
   handleValidation,
   async (req, res, next) => {
     try {
-      const result = await query(
-        'DELETE FROM proposals WHERE id = $1 RETURNING id',
-        [req.params.id],
-      );
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Отклик не найден' });
+      const existing = await query('SELECT * FROM proposals WHERE id = $1', [
+        req.params.id,
+      ]);
+      if (existing.rowCount === 0) {
+        throw new HttpError(404, 'Отклик не найден', 'PROPOSAL_NOT_FOUND');
       }
+      if (!canManageProposal(req.user, existing.rows[0])) {
+        throw new HttpError(403, 'Недостаточно прав', 'FORBIDDEN');
+      }
+      await query('DELETE FROM proposals WHERE id = $1', [req.params.id]);
       res.status(204).send();
     } catch (err) {
       next(err);

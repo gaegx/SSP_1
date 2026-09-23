@@ -1,9 +1,18 @@
 import { Routes, Route, NavLink, Link } from 'react-router-dom';
+import { AuthProvider, useAuth } from './AuthContext.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 import JobListPage from './pages/JobListPage.jsx';
 import JobDetailPage from './pages/JobDetailPage.jsx';
 import JobFormPage from './pages/JobFormPage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import RegisterPage from './pages/RegisterPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
 
-export default function App() {
+function Shell() {
+  const { isAuthenticated, user, logout } = useAuth();
+
   return (
     <div className="shell">
       <div className="bg-grid" aria-hidden="true" />
@@ -16,29 +25,92 @@ export default function App() {
             </span>
           </Link>
           <nav className="nav">
-            <NavLink to="/" end>
-              Заказы
-            </NavLink>
-            <NavLink to="/jobs/new" className="nav-cta">
-              + Новый заказ
-            </NavLink>
+            {isAuthenticated ? (
+              <>
+                <NavLink to="/" end>
+                  Заказы
+                </NavLink>
+                {(user.role === 'customer' || user.role === 'admin') && (
+                  <NavLink to="/jobs/new">+ Новый заказ</NavLink>
+                )}
+                <NavLink to="/profile">{user.email}</NavLink>
+                <button type="button" className="nav-cta btn-as-nav" onClick={logout}>
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login">Вход</NavLink>
+                <NavLink to="/register" className="nav-cta">
+                  Регистрация
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
       </header>
       <main className="main">
         <Routes>
-          <Route path="/" element={<JobListPage />} />
-          <Route path="/jobs/new" element={<JobFormPage />} />
-          <Route path="/jobs/:id/edit" element={<JobFormPage />} />
-          <Route path="/jobs/:id" element={<JobDetailPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <JobListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs/new"
+            element={
+              <ProtectedRoute roles={['customer', 'admin']}>
+                <JobFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs/:id/edit"
+            element={
+              <ProtectedRoute roles={['customer', 'admin']}>
+                <JobFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs/:id"
+            element={
+              <ProtectedRoute>
+                <JobDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
       <footer className="footer">
         <div className="footer-inner">
           <span>Freelance Desk</span>
-          <span className="muted">Биржа заказов · SPA + REST</span>
+          <span className="muted">Лаба 3 · JWT · роли · Mailhog</span>
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Shell />
+    </AuthProvider>
   );
 }

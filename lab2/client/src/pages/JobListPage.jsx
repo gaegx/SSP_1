@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, formatError } from '../api.js';
+import { useAuth } from '../AuthContext.jsx';
 
 const STATUS_LABELS = {
   open: 'Открыт',
@@ -10,6 +11,8 @@ const STATUS_LABELS = {
 };
 
 export default function JobListPage() {
+  const { user } = useAuth();
+  const canCreate = user?.role === 'customer' || user?.role === 'admin';
   const [jobs, setJobs] = useState([]);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -50,9 +53,11 @@ export default function JobListPage() {
             бюрократии.
           </p>
           <div className="hero-actions">
-            <Link className="btn primary" to="/jobs/new">
-              Создать заказ
-            </Link>
+            {canCreate && (
+              <Link className="btn primary" to="/jobs/new">
+                Создать заказ
+              </Link>
+            )}
             <a className="btn ghost" href="#jobs">
               Смотреть ленту
             </a>
@@ -90,9 +95,11 @@ export default function JobListPage() {
         <div className="empty">
           <h3>Пока пусто</h3>
           <p className="muted">Создайте первый заказ — и лента оживёт.</p>
-          <Link className="btn primary" to="/jobs/new">
-            Создать заказ
-          </Link>
+          {canCreate && (
+            <Link className="btn primary" to="/jobs/new">
+              Создать заказ
+            </Link>
+          )}
         </div>
       )}
 

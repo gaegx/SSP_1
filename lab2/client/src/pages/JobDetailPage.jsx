@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, formatError } from '../api.js';
+import { useAuth } from '../AuthContext.jsx';
 
 const STATUS_LABELS = {
   open: 'Открыт',
@@ -12,6 +13,9 @@ const STATUS_LABELS = {
 export default function JobDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canEditJob = user?.role === 'admin' || user?.role === 'customer';
+  const canPropose = user?.role === 'admin' || user?.role === 'freelancer';
   const [job, setJob] = useState(null);
   const [proposals, setProposals] = useState([]);
   const [error, setError] = useState('');
@@ -108,14 +112,16 @@ export default function JobDetailPage() {
             <h1>{job.title}</h1>
             <p className="lead">{job.description}</p>
           </div>
-          <div className="actions">
-            <Link className="btn ghost" to={`/jobs/${job.id}/edit`}>
-              Редактировать
-            </Link>
-            <button type="button" className="btn danger" onClick={handleDeleteJob}>
-              Удалить
-            </button>
-          </div>
+          {canEditJob && (
+            <div className="actions">
+              <Link className="btn ghost" to={`/jobs/${job.id}/edit`}>
+                Редактировать
+              </Link>
+              <button type="button" className="btn danger" onClick={handleDeleteJob}>
+                Удалить
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="meta-strip">
@@ -165,52 +171,59 @@ export default function JobDetailPage() {
           </ul>
         </div>
 
-        <form className="panel sticky-panel" onSubmit={handleSubmitProposal}>
-          <h2 className="section-title">Оставить отклик</h2>
-          <label>
-            Сопроводительное письмо
-            <textarea
-              required
-              minLength={10}
-              rows={5}
-              value={coverLetter}
-              onChange={(e) => setCoverLetter(e.target.value)}
-            />
-          </label>
-          <label>
-            Ставка, ₽
-            <input
-              type="number"
-              min="1"
-              step="0.01"
-              required
-              value={bidAmount}
-              onChange={(e) => setBidAmount(e.target.value)}
-            />
-          </label>
-          <label>
-            Срок, дней
-            <input
-              type="number"
-              min="1"
-              max="365"
-              required
-              value={estimatedDays}
-              onChange={(e) => setEstimatedDays(e.target.value)}
-            />
-          </label>
-          <label>
-            Портфолио (файл)
-            <input
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-              onChange={(e) => setPortfolio(e.target.files?.[0] || null)}
-            />
-          </label>
-          <button className="btn primary" type="submit" disabled={submitting}>
-            {submitting ? 'Отправка…' : 'Отправить'}
-          </button>
-        </form>
+        {canPropose ? (
+          <form className="panel sticky-panel" onSubmit={handleSubmitProposal}>
+            <h2 className="section-title">Оставить отклик</h2>
+            <label>
+              Сопроводительное письмо
+              <textarea
+                required
+                minLength={10}
+                rows={5}
+                value={coverLetter}
+                onChange={(e) => setCoverLetter(e.target.value)}
+              />
+            </label>
+            <label>
+              Ставка, ₽
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                required
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+              />
+            </label>
+            <label>
+              Срок, дней
+              <input
+                type="number"
+                min="1"
+                max="365"
+                required
+                value={estimatedDays}
+                onChange={(e) => setEstimatedDays(e.target.value)}
+              />
+            </label>
+            <label>
+              Портфолио (файл)
+              <input
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                onChange={(e) => setPortfolio(e.target.files?.[0] || null)}
+              />
+            </label>
+            <button className="btn primary" type="submit" disabled={submitting}>
+              {submitting ? 'Отправка…' : 'Отправить'}
+            </button>
+          </form>
+        ) : (
+          <div className="panel sticky-panel">
+            <h2 className="section-title">Отклики</h2>
+            <p className="muted">Откликаться могут исполнители (freelancer).</p>
+          </div>
+        )}
       </div>
     </section>
   );

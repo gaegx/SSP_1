@@ -13,12 +13,31 @@ services:
       timeout: 5s
       retries: 10
 
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
   api:
     build: ./api
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql://freelance:freelance@db:5432/freelance
       PORT: 4000
       UPLOAD_DIR: /app/uploads
+      JWT_SECRET: ${JWT_SECRET:-lab3-dev-secret}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@freelancedesk.local}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
+      ADMIN_EMAIL: admin@freelance.local
+      ADMIN_PASSWORD: Admin123!
+      LOG_LEVEL: info
     volumes:
       - uploads:/app/uploads
     ports:
@@ -26,6 +45,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailhog:
+        condition: service_started
 
   client:
     build: ./client

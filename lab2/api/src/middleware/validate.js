@@ -1,15 +1,15 @@
 import { validationResult } from 'express-validator';
+import { HttpError } from '../errors.js';
 
-export function handleValidation(req, res, next) {
+export function handleValidation(req, _res, next) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      error: 'Ошибка валидации',
-      details: errors.array().map((e) => ({
+    return next(
+      new HttpError(400, 'Ошибка валидации', 'VALIDATION_ERROR', errors.array().map((e) => ({
         field: e.path,
         message: e.msg,
-      })),
-    });
+      }))),
+    );
   }
   next();
 }
@@ -23,6 +23,7 @@ export function mapJob(row) {
     budget: Number(row.budget),
     status: row.status,
     attachmentPath: row.attachment_path,
+    ownerId: row.owner_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -37,6 +38,7 @@ export function mapProposal(row) {
     bidAmount: Number(row.bid_amount),
     estimatedDays: row.estimated_days,
     portfolioPath: row.portfolio_path,
+    authorId: row.author_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

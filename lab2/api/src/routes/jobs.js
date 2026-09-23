@@ -3,9 +3,10 @@ import { body, param, query as q } from 'express-validator';
 import { query } from '../db.js';
 import { upload } from '../middleware/upload.js';
 import { handleValidation, mapJob } from '../middleware/validate.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { HttpError } from '../errors.js';
 
 const router = Router();
-
 const STATUSES = ['open', 'in_progress', 'done', 'cancelled'];
 
 const jobValidators = [
@@ -26,6 +27,12 @@ const jobValidators = [
     .withMessage(`Статус: ${STATUSES.join(', ')}`),
 ];
 
+function canManageJob(user, job) {
+  return user.role === 'admin' || job.owner_id === user.id;
+}
+
+router.use(requireAuth);
+
 router.get(
   '/',
   q('status').optional().isIn(STATUSES).withMessage('Некорректный статус'),
@@ -34,7 +41,17 @@ router.get(
     try {
       const { status } = req.query;
       let result;
-      if (status) {
+      if (req.user.role === 'customer') {
+        result = status
+          ? await query(
+              'SELECT * FROM jobs WHERE owner_id = $1 AND status = $2 ORDER BY created_at DESC',
+              [req.user.id, status],
+            )
+          : await query(
+              'SELECT * FROM jobs WHERE owner_id = $1 ORDER BY created_at DESC',
+              [req.user.id],
+            );
+      } else if (status) {
         result = await query(
           'SELECT * FROM jobs WHERE status = $1 ORDER BY created_at DESC',
           [status],
@@ -57,9 +74,13 @@ router.get(
     try {
       const result = await query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
       if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Заказ не найден' });
+        throw new HttpError(404, 'Заказ не найден', 'JOB_NOT_FOUND');
       }
-      res.status(200).json(mapJob(result.rows[0]));
+      const job = result.rows[0];
+      if (req.user.role === 'customer' && job.owner_id !== req.user.id) {
+        throw new HttpError(403, 'Недостаточно прав', 'FORBIDDEN');
+      }
+      res.status(200).json(mapJob(job));
     } catch (err) {
       next(err);
     }
@@ -68,6 +89,7 @@ router.get(
 
 router.post(
   '/',
+  requireRole('customer', 'admin'),
   upload.single('attachment'),
   jobValidators,
   handleValidation,
@@ -78,10 +100,10 @@ router.post(
       const attachmentPath = req.file ? `/uploads/${req.file.filename}` : null;
 
       const result = await query(
-        `INSERT INTO jobs (title, description, budget, status, attachment_path)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO jobs (title, description, budget, status, attachment_path, owner_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [title.trim(), description.trim(), budget, status, attachmentPath],
+        [title.trim(), description.trim(), budget, status, attachmentPath, req.user.id],
       );
       res.status(201).json(mapJob(result.rows[0]));
     } catch (err) {
@@ -92,6 +114,7 @@ router.post(
 
 router.put(
   '/:id',
+  requireRole('customer', 'admin'),
   upload.single('attachment'),
   param('id').isInt({ min: 1 }).withMessage('Некорректный id'),
   jobValidators,
@@ -100,7 +123,10 @@ router.put(
     try {
       const existing = await query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
       if (existing.rowCount === 0) {
-        return res.status(404).json({ error: 'Заказ не найден' });
+        throw new HttpError(404, 'Заказ не найден', 'JOB_NOT_FOUND');
+      }
+      if (!canManageJob(req.user, existing.rows[0])) {
+        throw new HttpError(403, 'Недостаточно прав', 'FORBIDDEN');
       }
 
       const { title, description, budget, status } = req.body;
@@ -132,16 +158,19 @@ router.put(
 
 router.delete(
   '/:id',
+  requireRole('customer', 'admin'),
   param('id').isInt({ min: 1 }).withMessage('Некорректный id'),
   handleValidation,
   async (req, res, next) => {
     try {
-      const result = await query('DELETE FROM jobs WHERE id = $1 RETURNING id', [
-        req.params.id,
-      ]);
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Заказ не найден' });
+      const existing = await query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
+      if (existing.rowCount === 0) {
+        throw new HttpError(404, 'Заказ не найден', 'JOB_NOT_FOUND');
       }
+      if (!canManageJob(req.user, existing.rows[0])) {
+        throw new HttpError(403, 'Недостаточно прав', 'FORBIDDEN');
+      }
+      await query('DELETE FROM jobs WHERE id = $1', [req.params.id]);
       res.status(204).send();
     } catch (err) {
       next(err);

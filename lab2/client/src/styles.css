@@ -160,6 +160,21 @@ a:hover {
   color: #fff;
 }
 
+.btn-as-nav {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.btn-as-nav:hover {
+  background: var(--accent);
+}
+
 .main {
   flex: 1;
   padding: 1.75rem 0 3rem;
