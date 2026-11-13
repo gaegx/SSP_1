@@ -1,0 +1,39 @@
+:root {
+  --bg: #f4f1ea;
+  --ink: #1a1f1c;
+  --muted: #66736c;
+  --line: #ddd6c8;
+  --accent: #0f6e56;
+  --card: #fff;
+  --font: 'Segoe UI', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: radial-gradient(900px 400px at 0% 0%, #d9f2e8, transparent 55%), var(--bg);
+}
+.wrap { width: min(960px, calc(100% - 2rem)); margin: 0 auto; padding: 1.5rem 0 3rem; }
+header { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 1rem; }
+.eyebrow { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+h1 { margin: 0.25rem 0 0; font-size: 1.8rem; }
+.meta { font-size: 0.9rem; color: var(--muted); max-width: 280px; text-align: right; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+input, select, button {
+  font: inherit; padding: 0.55rem 0.75rem; border-radius: 10px; border: 1px solid var(--line); background: #fff;
+}
+button { cursor: pointer; font-weight: 600; background: var(--accent); color: #fff; border-color: transparent; }
+button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.list { display: flex; flex-direction: column; gap: 0.65rem; }
+.card { border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 0.9rem; background: #fafaf7; }
+.card h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+.card p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.badges { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.45rem; }
+.badge { font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 999px; background: #e7f5ef; color: var(--accent); font-weight: 600; }
+.pager { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.err { color: #a31b1b; }
+.hint { color: var(--muted); font-size: 0.9rem; }
+a { color: var(--accent); }
