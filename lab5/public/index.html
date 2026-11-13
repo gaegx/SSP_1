@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lab 5 · GraphQL Catalog</title>
+    <title>Lab 5 · GraphQL Gateway</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <div class="wrap">
       <header>
         <div>
-          <p class="eyebrow">Lab 5 · только GraphQL</p>
+          <p class="eyebrow">Lab 5 · GraphQL stitching · 3 subgraphs</p>
           <h1>Каталог из 3 источников</h1>
         </div>
         <div id="meta" class="meta">загрузка…</div>
@@ -25,11 +25,14 @@
           <option value="fakestore">fakestore</option>
           <option value="local">local</option>
         </select>
+        <input id="category" placeholder="Категория" />
+        <input id="minPrice" type="number" placeholder="min price" min="0" step="1" />
         <select id="sortBy">
           <option value="TITLE">Сорт: название</option>
           <option value="PRICE">Сорт: цена</option>
           <option value="RATING">Сорт: рейтинг</option>
           <option value="CREATED_AT">Сорт: дата</option>
+          <option value="SOURCE">Сорт: источник</option>
         </select>
         <select id="sortDir">
           <option value="ASC">ASC</option>
@@ -37,6 +40,12 @@
         </select>
         <button id="btn-load" type="button">Найти</button>
         <button id="btn-refresh" type="button" class="ghost">refreshCatalog</button>
+      </section>
+
+      <section class="panel note-row">
+        <input id="note-title" placeholder="Новая заметка (addNote)" />
+        <button id="btn-note" type="button" class="ghost">Добавить</button>
+        <span id="trace" class="trace"></span>
       </section>
 
       <section class="panel">
@@ -50,9 +59,11 @@
       </section>
 
       <p class="hint">
-        Полный GraphQL playground:
+        GraphQL:
         <a href="/graphql" target="_blank">/graphql</a>
-        · метрики: <a href="/metrics" target="_blank">/metrics</a>
+        · метрики:
+        <a href="/metrics" target="_blank">/metrics</a>
+        · subgraphs: :4001 items · :4002 authors · :4003 ops
       </p>
     </div>
     <script src="/app.js"></script>

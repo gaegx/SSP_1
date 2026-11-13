@@ -37,3 +37,6 @@ button.ghost { background: transparent; color: var(--ink); border-color: var(--l
 .err { color: #a31b1b; }
 .hint { color: var(--muted); font-size: 0.9rem; }
 a { color: var(--accent); }
+.note-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.note-row input { flex: 1; min-width: 180px; }
+.trace { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
