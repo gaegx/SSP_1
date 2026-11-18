@@ -1,17 +1,22 @@
-# Лабораторная №5 — GraphQL (schema stitching)
+# Lab 5 — Weather Compare (GraphQL)
 
-Клиент ↔ backend **только через GraphQL**. Gateway сшивает **3 subgraph** (распределённая архитектура). Данные из **≥3 источников**, ≥10 000 записей.
+Сравнение погоды по городам из **3 источников**. Клиент ↔ backend **только GraphQL**.
+
+## Источники
+
+1. **Open-Meteo Forecast** — прогноз  
+2. **Open-Meteo Archive** — история  
+3. **MET Norway** — locationforecast  
+
+При сбое API — retry + локальный fallback (≥10 000 readings).
 
 ## Архитектура
 
 ```
-UI / GraphQL client
-        │
-        ▼
- Gateway :4005  (stitch + rate limit + tracing + /metrics)
-   ├── items   :4001
-   ├── authors :4002
-   └── ops     :4003
+UI → Gateway :4005
+       ├── readings :4001
+       ├── cities   :4002
+       └── ops      :4003
 ```
 
 ## Запуск
@@ -19,47 +24,17 @@ UI / GraphQL client
 ```bash
 cd lab5
 npm install
-npm run collect   # 3 API + fallback ≥10k
-npm start         # поднимает 3 subgraph + gateway
+npm run collect
+npm start
 ```
 
 - UI: http://localhost:4005  
 - GraphQL: http://localhost:4005/graphql  
 - Metrics: http://localhost:4005/metrics  
 
-## Источники
+## Доп. функционал
 
-1. JSONPlaceholder  
-2. DummyJSON  
-3. Fake Store API  
-
-При сбое — retry + локальный fallback.
-
-## ТЗ
-
-| Требование | Реализация |
-|------------|------------|
-| Только GraphQL | UI → `POST /graphql` на gateway |
-| 3 источника, ≥10k | `npm run collect` |
-| Операции + вложенность | Query/Mutation; `Item.author.items`, `related` |
-| Динамические запросы | variables + сборка selection set в UI |
-| Фильтр / сорт / поиск / пагинация | args у `items` |
-| Производительность | in-memory индексы, limit≤100 |
-| Отказоустойчивость | retry/fallback collect; изоляция subgraph |
-| Нагрузка / мониторинг / трассировка | `MAX_IN_FLIGHT`, `/metrics`, `extensions.tracing` |
-| Распределённая архитектура | gateway + 3 HTTP subgraph (schema stitching) |
-
-## Пример
-
-```graphql
-query {
-  items(search: "phone", filter: { source: "dummyjson" }, sortBy: PRICE, page: 1) {
-    pageInfo { total }
-    nodes {
-      title
-      author { name items(limit: 2) { nodes { title } } }
-      related { title }
-    }
-  }
-}
-```
+- `compareCity(cityId)` — avg/min/max °C и **разброс** между источниками  
+- `related` — показания того же города из других API  
+- nested `city { readings { … } }`  
+- rate limit, `/metrics`, `extensions.traceId`

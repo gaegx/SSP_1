@@ -44,8 +44,8 @@ if (!fs.existsSync(DATA_FILE)) {
   await collectAll();
 }
 
-run('items', path.join('src', 'subgraphs', 'items.js'));
-run('authors', path.join('src', 'subgraphs', 'authors.js'));
+run('readings', path.join('src', 'subgraphs', 'readings.js'));
+run('cities', path.join('src', 'subgraphs', 'cities.js'));
 run('ops', path.join('src', 'subgraphs', 'ops.js'));
 
 await new Promise((r) => setTimeout(r, 800));

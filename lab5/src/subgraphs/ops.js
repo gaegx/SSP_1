@@ -9,8 +9,9 @@ import {
 } from '../store.js';
 import { collectAll, DATA_FILE } from '../collect.js';
 import fs from 'fs';
+import { config } from '../config.js';
 
-const PORT = Number(process.env.OPS_PORT) || 4003;
+const PORT = config.opsPort;
 
 if (fs.existsSync(DATA_FILE)) loadCatalog();
 
@@ -24,6 +25,7 @@ const typeDefs = /* GraphQL */ `
   type CatalogMeta {
     collectedAt: String!
     totalItems: Int!
+    totalCities: Int!
     totalAuthors: Int!
     sources: [SourceStats!]!
   }
@@ -72,6 +74,7 @@ const resolvers = {
       return {
         collectedAt: c.collectedAt,
         totalItems: c.items.length,
+        totalCities: c.authors.length,
         totalAuthors: c.authors.length,
         sources: sourceStats(),
       };
@@ -85,7 +88,7 @@ const resolvers = {
       return {
         ok: true,
         totalItems: catalog.items.length,
-        message: `Собрано ${catalog.items.length} записей из 3 источников`,
+        message: `Собрано ${catalog.items.length} weather readings из 3 источников`,
       };
     },
   },

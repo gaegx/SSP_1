@@ -1,11 +1,11 @@
-﻿# SSP — лабораторные работы
+# SSP — лабораторные работы
 
 | Лаба | Описание | Папка |
 |------|----------|--------|
 | №1 | SSR-список задач (Express + EJS) | [lab1](./lab1) |
 | №2–3 | SPA + REST CRUD + auth/JWT/роли/Mailhog/CI | [lab2](./lab2) |
 | №4 | Крестики-нолики realtime (WebSocket, vanilla JS) | [lab4](./lab4) |
-| №5 | GraphQL gateway + 3 subgraph, ≥10k, metrics | [lab5](./lab5) |
+| №5 | Weather Compare: GraphQL + 3 weather APIs | [lab5](./lab5) |
 
 ## Запуск
 

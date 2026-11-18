@@ -8,14 +8,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { metrics, recordLatency, snapshot } from './metrics.js';
+import { config } from './config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(__dirname, '..', 'public');
-const PORT = Number(process.env.PORT) || 4005;
-const ITEMS_URL = process.env.ITEMS_URL || 'http://127.0.0.1:4001/graphql';
-const AUTHORS_URL = process.env.AUTHORS_URL || 'http://127.0.0.1:4002/graphql';
-const OPS_URL = process.env.OPS_URL || 'http://127.0.0.1:4003/graphql';
-const MAX_IN_FLIGHT = Number(process.env.MAX_IN_FLIGHT) || 25;
+const PORT = config.port;
+const ITEMS_URL = config.itemsUrl;
+const AUTHORS_URL = config.authorsUrl;
+const OPS_URL = config.opsUrl;
+const MAX_IN_FLIGHT = config.maxInFlight;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -26,7 +27,7 @@ const MIME = {
 function timedExecutor(name, endpoint) {
   const base = buildHTTPExecutor({
     endpoint,
-    timeout: 15000,
+    timeout: config.subgraphTimeoutMs,
   });
   return async (request) => {
     const t0 = Date.now();
@@ -68,36 +69,36 @@ async function waitFor(url, attempts = 40) {
 async function buildGatewaySchema() {
   await Promise.all([waitFor(ITEMS_URL), waitFor(AUTHORS_URL), waitFor(OPS_URL)]);
 
-  const itemsExec = timedExecutor('items', ITEMS_URL);
-  const authorsExec = timedExecutor('authors', AUTHORS_URL);
+  const readingsExec = timedExecutor('readings', ITEMS_URL);
+  const citiesExec = timedExecutor('cities', AUTHORS_URL);
   const opsExec = timedExecutor('ops', OPS_URL);
 
-  const [itemsSchema, authorsSchema, opsSchema] = await Promise.all([
-    schemaFromExecutor(itemsExec),
-    schemaFromExecutor(authorsExec),
+  const [readingsSchema, citiesSchema, opsSchema] = await Promise.all([
+    schemaFromExecutor(readingsExec),
+    schemaFromExecutor(citiesExec),
     schemaFromExecutor(opsExec),
   ]);
 
   return stitchSchemas({
     subschemas: [
       {
-        schema: itemsSchema,
-        executor: itemsExec,
+        schema: readingsSchema,
+        executor: readingsExec,
         merge: {
-          Item: {
+          Reading: {
             selectionSet: '{ id }',
-            fieldName: 'item',
+            fieldName: 'reading',
             args: ({ id }) => ({ id }),
           },
         },
       },
       {
-        schema: authorsSchema,
-        executor: authorsExec,
+        schema: citiesSchema,
+        executor: citiesExec,
         merge: {
-          Author: {
+          City: {
             selectionSet: '{ id }',
-            fieldName: 'author',
+            fieldName: 'city',
             args: ({ id }) => ({ id }),
           },
         },
@@ -125,8 +126,8 @@ async function subgraphHealth() {
     }
   };
   return Promise.all([
-    check('items', ITEMS_URL),
-    check('authors', AUTHORS_URL),
+    check('readings', ITEMS_URL),
+    check('cities', AUTHORS_URL),
     check('ops', OPS_URL),
   ]);
 }
@@ -141,18 +142,12 @@ const yoga = createYoga({
   plugins: [
     {
       onExecute({ args }) {
-        const t0 = Date.now();
+        const t0 = args.contextValue?.t0 || Date.now();
         const traceId = args.contextValue?.traceId || randomUUID();
-        args.contextValue.traceId = traceId;
-        args.contextValue.t0 = t0;
-        metrics.inFlight += 1;
-        metrics.requests += 1;
         return {
           onExecuteDone({ result, setResult }) {
-            const done = (payload) => {
-              metrics.inFlight = Math.max(0, metrics.inFlight - 1);
+            const attach = (payload) => {
               const ms = Date.now() - t0;
-              recordLatency(ms);
               if (payload?.errors?.length) {
                 metrics.errors += 1;
                 metrics.byStatus.error = (metrics.byStatus.error || 0) + 1;
@@ -173,9 +168,7 @@ const yoga = createYoga({
             if (result && typeof result[Symbol.asyncIterator] === 'function') {
               return {
                 onNext({ result: next, setResult: setNext }) {
-                  metrics.inFlight = Math.max(0, metrics.inFlight - 1);
                   const ms = Date.now() - t0;
-                  recordLatency(ms);
                   setNext({
                     ...next,
                     extensions: {
@@ -188,7 +181,7 @@ const yoga = createYoga({
                 },
               };
             }
-            done(result);
+            attach(result);
           },
         };
       },
@@ -196,8 +189,16 @@ const yoga = createYoga({
   ],
   context: ({ request }) => ({
     traceId: request.headers.get('x-trace-id') || randomUUID(),
+    t0: Date.now(),
   }),
 });
+
+function releaseSlot(res, t0) {
+  if (res.__lab5Released) return;
+  res.__lab5Released = true;
+  metrics.inFlight = Math.max(0, metrics.inFlight - 1);
+  recordLatency(Date.now() - t0);
+}
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
@@ -209,7 +210,7 @@ const server = createServer(async (req, res) => {
       JSON.stringify(
         snapshot({
           maxInFlight: MAX_IN_FLIGHT,
-          architecture: 'gateway + 3 subgraphs (schema stitching)',
+          architecture: 'weather compare · gateway + readings/cities/ops',
           subgraphs,
         }),
         null,
@@ -220,12 +221,23 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname.startsWith('/graphql')) {
+    // Admit slot immediately (check+increment), until response finishes.
+    // Avoids race where many requests pass the gate before onExecute.
     if (metrics.inFlight >= MAX_IN_FLIGHT) {
       metrics.rejected += 1;
       res.writeHead(429, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ errors: [{ message: 'Too many requests — rate limited' }] }));
       return;
     }
+    metrics.inFlight += 1;
+    metrics.requests += 1;
+    const t0 = Date.now();
+    const originalEnd = res.end.bind(res);
+    res.end = (...args) => {
+      releaseSlot(res, t0);
+      return originalEnd(...args);
+    };
+    res.on('close', () => releaseSlot(res, t0));
     return yoga(req, res);
   }
 

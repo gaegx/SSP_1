@@ -8,7 +8,7 @@ export const metrics = {
   rejected: 0,
   inFlight: 0,
   byStatus: {},
-  subgraphErrors: { items: 0, authors: 0, ops: 0 },
+  subgraphErrors: { readings: 0, cities: 0, ops: 0 },
 };
 
 export function recordLatency(ms) {

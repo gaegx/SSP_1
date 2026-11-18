@@ -1,24 +1,26 @@
 export const SORT_MAP = {
   TITLE: 'title',
-  PRICE: 'price',
-  RATING: 'rating',
-  CREATED_AT: 'createdAt',
+  TEMPERATURE: 'temperature',
+  HUMIDITY: 'humidity',
+  WIND: 'windSpeed',
+  OBSERVED_AT: 'observedAt',
   SOURCE: 'source',
 };
 
 export function mapSort(sortBy, sortDir) {
   return {
-    sortBy: SORT_MAP[sortBy] || 'title',
-    sortDir: sortDir === 'DESC' ? 'desc' : 'asc',
+    sortBy: SORT_MAP[sortBy] || 'observedAt',
+    sortDir: sortDir === 'ASC' ? 'asc' : 'desc',
   };
 }
 
 export const COMMON_ENUMS = /* GraphQL */ `
   enum SortField {
     TITLE
-    PRICE
-    RATING
-    CREATED_AT
+    TEMPERATURE
+    HUMIDITY
+    WIND
+    OBSERVED_AT
     SOURCE
   }
 
@@ -36,16 +38,17 @@ export const COMMON_ENUMS = /* GraphQL */ `
     hasPrevPage: Boolean!
   }
 
-  type ItemConnection {
-    nodes: [Item!]!
+  type ReadingConnection {
+    nodes: [Reading!]!
     pageInfo: PageInfo!
   }
 
-  input ItemFilterInput {
+  input ReadingFilterInput {
     source: String
     category: String
-    minPrice: Float
-    maxPrice: Float
-    minRating: Float
+    country: String
+    minTemp: Float
+    maxTemp: Float
+    minHumidity: Float
   }
 `;

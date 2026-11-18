@@ -3,14 +3,16 @@ import { createSchema, createYoga } from 'graphql-yoga';
 import { COMMON_ENUMS, mapSort } from '../shared.js';
 import {
   getCatalog,
-  getAuthor,
-  queryItemsByAuthor,
+  getCity,
+  queryReadingsByCity,
   loadCatalog,
+  compareCity,
 } from '../store.js';
 import fs from 'fs';
 import { DATA_FILE } from '../collect.js';
+import { config } from '../config.js';
 
-const PORT = Number(process.env.AUTHORS_PORT) || 4002;
+const PORT = config.authorsPort;
 
 if (!fs.existsSync(DATA_FILE)) {
   console.error('No catalog — run npm run collect');
@@ -21,50 +23,73 @@ loadCatalog();
 const typeDefs = /* GraphQL */ `
   ${COMMON_ENUMS}
 
-  type Item {
+  type Reading {
     id: ID!
     title: String!
     description: String
     category: String
     source: String!
-    price: Float!
-    rating: Float!
+    temperature: Float!
+    humidity: Float!
+    windSpeed: Float!
     tags: [String!]!
-    createdAt: String!
+    observedAt: String!
   }
 
-  type Author {
+  type SourceCompare {
+    source: String!
+    count: Int!
+    avgTemp: Float!
+    minTemp: Float!
+    maxTemp: Float!
+    latestTemp: Float
+    latestAt: String
+  }
+
+  type CityComparison {
+    city: City!
+    spread: Float!
+    sources: [SourceCompare!]!
+  }
+
+  type City {
     id: ID!
     name: String!
-    email: String
+    country: String
+    lat: Float
+    lon: Float
     source: String!
-    items(
+    readings(
       search: String
       category: String
-      sortBy: SortField = TITLE
-      sortDir: SortDir = ASC
+      sortBy: SortField = OBSERVED_AT
+      sortDir: SortDir = DESC
       page: Int = 1
       limit: Int = 10
-    ): ItemConnection!
+    ): ReadingConnection!
+    comparison: CityComparison
   }
 
   type Query {
-    author(id: ID!): Author
-    authors(search: String, page: Int = 1, limit: Int = 20): [Author!]!
+    city(id: ID!): City
+    cities(search: String, country: String, page: Int = 1, limit: Int = 20): [City!]!
   }
 `;
 
 const resolvers = {
   Query: {
-    author: (_r, { id }) => getAuthor(id),
-    authors: (_r, { search, page = 1, limit = 20 }) => {
+    city: (_r, { id }) => getCity(id),
+    cities: (_r, { search, country, page = 1, limit = 20 }) => {
       let list = getCatalog().authors;
+      if (country) list = list.filter((a) => (a.country || a.email) === country);
       if (search) {
         const q = search.toLowerCase();
         list = list.filter(
           (a) =>
             a.name.toLowerCase().includes(q) ||
-            (a.email || '').toLowerCase().includes(q),
+            String(a.country || a.email || '')
+              .toLowerCase()
+              .includes(q),
         );
       }
       const safeLimit = Math.min(Math.max(limit, 1), 100);
@@ -72,15 +97,17 @@ const resolvers = {
       return list.slice(start, start + safeLimit);
     },
   },
-  Author: {
-    items: (author, args) =>
-      queryItemsByAuthor(author.id, {
+  City: {
+    country: (c) => c.country || c.email || null,
+    readings: (city, args) =>
+      queryReadingsByCity(city.id, {
         search: args.search,
         category: args.category,
         page: args.page,
         limit: args.limit,
         ...mapSort(args.sortBy, args.sortDir),
       }),
+    comparison: (city) => compareCity(city.id),
   },
 };
 
@@ -91,7 +118,7 @@ const yoga = createYoga({
 });
 
 createServer(yoga).listen(PORT, () => {
-  console.log(`[authors] http://127.0.0.1:${PORT}/graphql`);
+  console.log(`[cities] http://127.0.0.1:${PORT}/graphql`);
 });
 
 setInterval(() => {

@@ -3,68 +3,91 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lab 5 · GraphQL Gateway</title>
+    <title>Weather Compare · GraphQL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@450;600;700&family=IBM+Plex+Mono:wght@450;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <div class="wrap">
-      <header>
-        <div>
-          <p class="eyebrow">Lab 5 · GraphQL stitching · 3 subgraphs</p>
-          <h1>Каталог из 3 источников</h1>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="logo">W</span>
+          <div>
+            <strong>Weather Compare</strong>
+            <small>3 sources · GraphQL only</small>
+          </div>
         </div>
-        <div id="meta" class="meta">загрузка…</div>
+        <div class="top-meta">
+          <span id="status-pill" class="pill">…</span>
+          <span id="total-pill" class="pill quiet">— readings</span>
+          <a class="link" href="/graphql" target="_blank">GraphQL</a>
+          <a class="link" href="/metrics" target="_blank">Metrics</a>
+        </div>
       </header>
 
-      <section class="toolbar panel">
-        <input id="search" placeholder="Поиск…" />
+      <section class="sources" id="sources"></section>
+
+      <section class="filters">
+        <input id="search" placeholder="Search city / condition" />
         <select id="source">
-          <option value="">Все источники</option>
-          <option value="jsonplaceholder">jsonplaceholder</option>
-          <option value="dummyjson">dummyjson</option>
-          <option value="fakestore">fakestore</option>
+          <option value="">All sources</option>
+          <option value="open-meteo-forecast">open-meteo-forecast</option>
+          <option value="open-meteo-archive">open-meteo-archive</option>
+          <option value="met-norway">met-norway</option>
           <option value="local">local</option>
         </select>
-        <input id="category" placeholder="Категория" />
-        <input id="minPrice" type="number" placeholder="min price" min="0" step="1" />
+        <input id="country" placeholder="Country (RU, US…)" maxlength="4" />
+        <input id="minTemp" type="number" step="1" placeholder="Min °C" />
         <select id="sortBy">
-          <option value="TITLE">Сорт: название</option>
-          <option value="PRICE">Сорт: цена</option>
-          <option value="RATING">Сорт: рейтинг</option>
-          <option value="CREATED_AT">Сорт: дата</option>
-          <option value="SOURCE">Сорт: источник</option>
+          <option value="OBSERVED_AT">Sort: time</option>
+          <option value="TEMPERATURE">Sort: temperature</option>
+          <option value="HUMIDITY">Sort: humidity</option>
+          <option value="WIND">Sort: wind</option>
+          <option value="SOURCE">Sort: source</option>
+          <option value="TITLE">Sort: title</option>
         </select>
         <select id="sortDir">
-          <option value="ASC">ASC</option>
           <option value="DESC">DESC</option>
+          <option value="ASC">ASC</option>
         </select>
-        <button id="btn-load" type="button">Найти</button>
-        <button id="btn-refresh" type="button" class="ghost">refreshCatalog</button>
+        <label class="check"><input id="deep" type="checkbox" checked /> Nested city.readings</label>
+        <button id="btn-load" type="button">Apply</button>
       </section>
 
-      <section class="panel note-row">
-        <input id="note-title" placeholder="Новая заметка (addNote)" />
-        <button id="btn-note" type="button" class="ghost">Добавить</button>
-        <span id="trace" class="trace"></span>
+      <section class="compare-box">
+        <label>Compare sources for city
+          <select id="compare-city"></select>
+        </label>
+        <button id="btn-compare" type="button" class="ghost">Compare</button>
+        <div id="compare-out" class="compare-out">Выбери город — увидишь avg/min/max °C по каждому API и разброс.</div>
       </section>
 
-      <section class="panel">
+      <section class="toolbar">
         <div class="pager">
-          <button id="prev" type="button">←</button>
-          <span id="page-label">стр. 1</span>
-          <button id="next" type="button">→</button>
+          <button id="prev" type="button" class="ghost">Prev</button>
+          <span id="page-label">page 1</span>
+          <button id="next" type="button" class="ghost">Next</button>
         </div>
-        <div id="list" class="list"></div>
-        <p id="err" class="err" hidden></p>
+        <div class="mut">
+          <input id="note-title" placeholder="addNote" />
+          <button id="btn-note" type="button" class="ghost">Add</button>
+          <button id="btn-refresh" type="button" class="ghost">Refresh data</button>
+        </div>
+        <div id="trace" class="trace">trace —</div>
       </section>
 
-      <p class="hint">
-        GraphQL:
-        <a href="/graphql" target="_blank">/graphql</a>
-        · метрики:
-        <a href="/metrics" target="_blank">/metrics</a>
-        · subgraphs: :4001 items · :4002 authors · :4003 ops
-      </p>
+      <main id="list" class="grid"></main>
+      <p id="err" class="err" hidden></p>
+
+      <footer class="foot">
+        <span>UI → :4005 → readings :4001 · cities :4002 · ops :4003</span>
+        <span id="foot-metrics">metrics —</span>
+      </footer>
     </div>
     <script src="/app.js"></script>
   </body>
