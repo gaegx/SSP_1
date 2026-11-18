@@ -59,12 +59,25 @@
         <button id="btn-load" type="button">Apply</button>
       </section>
 
-      <section class="compare-box">
-        <label>Compare sources for city
-          <select id="compare-city"></select>
-        </label>
-        <button id="btn-compare" type="button" class="ghost">Compare</button>
-        <div id="compare-out" class="compare-out">Выбери город — увидишь avg/min/max °C по каждому API и разброс.</div>
+      <section class="compare" aria-label="Сравнение источников">
+        <div class="compare-head">
+          <div>
+            <p class="compare-kicker">Сравнение источников</p>
+            <h2 id="compare-title">Выбери город</h2>
+          </div>
+          <div class="compare-controls">
+            <select id="compare-city"></select>
+            <button id="btn-compare" type="button">Сравнить</button>
+          </div>
+        </div>
+        <div id="compare-spread" class="spread-banner hidden">
+          <span class="spread-label">Разброс между API</span>
+          <strong id="spread-value">—</strong>
+          <span id="spread-hint" class="spread-hint"></span>
+        </div>
+        <div id="compare-out" class="compare-grid">
+          <div class="compare-empty">Нажми «Сравнить» — покажем avg / min / max / latest °C по каждому источнику.</div>
+        </div>
       </section>
 
       <section class="toolbar">
